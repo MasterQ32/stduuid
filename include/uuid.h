@@ -62,14 +62,14 @@ namespace uuids
 
          static constexpr unsigned int block_bytes = 64;
 
-         inline static uint32_t left_rotate(uint32_t value, size_t const count) 
+         inline static uint32_t left_rotate(uint32_t value, size_t const count)
          {
             return (value << count) ^ (value >> (32 - count));
          }
 
          sha1() { reset(); }
 
-         void reset() 
+         void reset()
          {
             m_digest[0] = 0x67452301;
             m_digest[1] = 0xEFCDAB89;
@@ -80,7 +80,7 @@ namespace uuids
             m_byteCount = 0;
          }
 
-         void process_byte(uint8_t octet) 
+         void process_byte(uint8_t octet)
          {
             this->m_block[this->m_blockByteIndex++] = octet;
             ++this->m_byteCount;
@@ -91,11 +91,11 @@ namespace uuids
             }
          }
 
-         void process_block(void const * const start, void const * const end) 
+         void process_block(void const * const start, void const * const end)
          {
             const uint8_t* begin = static_cast<const uint8_t*>(start);
             const uint8_t* finish = static_cast<const uint8_t*>(end);
-            while (begin != finish) 
+            while (begin != finish)
             {
                process_byte(*begin);
                begin++;
@@ -108,7 +108,7 @@ namespace uuids
             process_block(block, block + len);
          }
 
-         uint32_t const * get_digest(digest32_t digest) 
+         uint32_t const * get_digest(digest32_t digest)
          {
             size_t const bitCount = this->m_byteCount * 8;
             process_byte(0x80);
@@ -138,7 +138,7 @@ namespace uuids
             return digest;
          }
 
-         uint8_t const * get_digest_bytes(digest8_t digest) 
+         uint8_t const * get_digest_bytes(digest8_t digest)
          {
             digest32_t d32;
             get_digest(d32);
@@ -172,7 +172,7 @@ namespace uuids
          }
 
       private:
-         void process_block() 
+         void process_block()
          {
             uint32_t w[80];
             for (size_t i = 0; i < 16; i++) {
@@ -191,7 +191,7 @@ namespace uuids
             uint32_t d = m_digest[3];
             uint32_t e = m_digest[4];
 
-            for (std::size_t i = 0; i < 80; ++i) 
+            for (std::size_t i = 0; i < 80; ++i)
             {
                uint32_t f = 0;
                uint32_t k = 0;
@@ -264,23 +264,23 @@ namespace uuids
       // N bit pattern: 0xxx
       // > the first 6 octets of the UUID are a 48-bit timestamp (the number of 4 microsecond units of time since 1 Jan 1980 UTC);
       // > the next 2 octets are reserved;
-      // > the next octet is the "address family"; 
+      // > the next octet is the "address family";
       // > the final 7 octets are a 56-bit host ID in the form specified by the address family
       ncs,
-      
-      // RFC 4122/DCE 1.1 
+
+      // RFC 4122/DCE 1.1
       // N bit pattern: 10xx
       // > big-endian byte order
       rfc,
-      
+
       // Microsoft Corporation backward compatibility
       // N bit pattern: 110x
       // > little endian byte order
-      // > formely used in the Component Object Model (COM) library      
+      // > formely used in the Component Object Model (COM) library
       microsoft,
-      
+
       // reserved for possible future definition
-      // N bit pattern: 111x      
+      // N bit pattern: 111x
       reserved
    };
 
@@ -300,20 +300,20 @@ namespace uuids
       using value_type = uint8_t;
 
    public:
-      constexpr uuid() noexcept : data({}) {};
+      uuid() noexcept = default; //: data({}) {}
 
       explicit uuid(gsl::span<value_type, 16> bytes)
       {
          std::copy(std::cbegin(bytes), std::cend(bytes), std::begin(data));
       }
-      
+
       template<typename ForwardIterator>
       explicit uuid(ForwardIterator first, ForwardIterator last)
       {
          if (std::distance(first, last) == 16)
             std::copy(first, last, std::begin(data));
       }
-      
+
       constexpr uuid_variant variant() const noexcept
       {
          if ((data[8] & 0x80) == 0x00)
@@ -371,7 +371,7 @@ namespace uuids
          else
             size = wcslen(str);
 
-         if (str == nullptr || size == 0) 
+         if (str == nullptr || size == 0)
             return false;
 
          if (str[0] == static_cast<CharT>('{'))
@@ -466,22 +466,22 @@ namespace uuids
          return uuid{ std::cbegin(data), std::cend(data) };
       }
 
-      template<class CharT = char, 
+      template<class CharT = char,
                class Traits = std::char_traits<CharT>,
                class Allocator = std::allocator<CharT>>
-      static std::optional<uuid> from_string(std::basic_string<CharT, Traits, Allocator>& str) noexcept
+      static std::optional<uuid> from_string(std::basic_string<CharT, Traits, Allocator> const & str) noexcept
       {
          return from_string(str.c_str());
       }
 
    private:
-      std::array<value_type, 16> data{ { 0 } };
+      std::array<value_type, 16> data; // { { 0 } };
 
       friend bool operator==(uuid const & lhs, uuid const & rhs) noexcept;
       friend bool operator<(uuid const & lhs, uuid const & rhs) noexcept;
 
       template <class Elem, class Traits>
-      friend std::basic_ostream<Elem, Traits> & operator<<(std::basic_ostream<Elem, Traits> &s, uuid const & id);  
+      friend std::basic_ostream<Elem, Traits> & operator<<(std::basic_ostream<Elem, Traits> &s, uuid const & id);
    };
 
    inline bool operator== (uuid const& lhs, uuid const& rhs) noexcept
@@ -636,21 +636,24 @@ namespace uuids
    };
 
    template <typename UniformRandomNumberGenerator>
-   class basic_uuid_random_generator 
+   class basic_uuid_random_generator
    {
    public:
       using engine_type = UniformRandomNumberGenerator;
 
-      explicit basic_uuid_random_generator(engine_type& gen) :
-         generator(&gen, [](auto) {}) {}
-      explicit basic_uuid_random_generator(engine_type* gen) :
-         generator(gen, [](auto) {}) {}
-
-      uuid operator()()
+			uuid operator()()
       {
+				static thread_local engine_type engine;
+				return (*this)(engine);
+			}
+
+      uuid operator()(engine_type & engine)
+      {
+				std::uniform_int_distribution<uint32_t>  distribution;
+
          uint8_t bytes[16];
          for (int i = 0; i < 16; i += 4)
-            *reinterpret_cast<uint32_t*>(bytes + i) = distribution(*generator);
+            *reinterpret_cast<uint32_t*>(bytes + i) = distribution(engine);
 
          // variant must be 10xxxxxx
          bytes[8] &= 0xBF;
@@ -662,14 +665,10 @@ namespace uuids
 
          return uuid{std::begin(bytes), std::end(bytes)};
       }
-
-   private:
-      std::uniform_int_distribution<uint32_t>  distribution;
-      std::shared_ptr<UniformRandomNumberGenerator> generator;
    };
 
    using uuid_random_generator = basic_uuid_random_generator<std::mt19937>;
-   
+
    class uuid_name_generator
    {
    public:
@@ -692,7 +691,7 @@ namespace uuids
       }
 
    private:
-      void reset() 
+      void reset()
       {
          hasher.reset();
          std::byte bytes[16];
@@ -700,12 +699,12 @@ namespace uuids
          std::copy(std::cbegin(nsbytes), std::cend(nsbytes), bytes);
          hasher.process_bytes(bytes, 16);
       }
-      
+
       template <typename char_type,
                 typename = std::enable_if_t<std::is_integral<char_type>::value>>
       void process_characters(char_type const * const characters, size_t const count)
       {
-         for (size_t i = 0; i < count; i++) 
+         for (size_t i = 0; i < count; i++)
          {
             uint32_t c = characters[i];
             hasher.process_byte(static_cast<unsigned char>((c >> 0) & 0xFF));
@@ -739,7 +738,11 @@ namespace uuids
    private:
       uuid nsuuid;
       detail::sha1 hasher;
-   }; 
+   };
+
+	 inline uuid new_uuid() {
+		 return uuid_system_generator{}();
+	 }
 }
 
 namespace std
